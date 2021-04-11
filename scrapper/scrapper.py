@@ -1,8 +1,6 @@
 import os
 from flask import jsonify
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 
 class Scrapper:
@@ -16,32 +14,56 @@ class Scrapper:
     temp_store_api_save: str = os.environ.get("TEMP_STORE_ADD_DATA")
     temp_store_api_delete: str = os.environ.get("TEMP_STORE_ADD_DELETE")
 
-    def __init__(self, login_url: str, target_url: str, chrome_driver_path: str = None, username: str = None, password: str =None):
+    def __init__(self, login_url: str, target_url: str, username: str = None, password: str = None):
         self.login_url = login_url
         self.username = username or os.environ.get('username')
         self.password = password or os.environ.get('password')
         self.target_url = target_url
 
-    def get_page(self, url: str) -> str:
+    def get_all_stocks(self) -> tuple:
+        """
+            :return: a list of stock details from data-service api
+        """
         pass
 
-    def login(self) -> bool:
+    def get_all_brokers(self) -> tuple:
         """
-            call login through the our cloud run service
+            :return: a list of brokers from data service api
+        """
+        pass
+
+    def parse_stock(self, symbol: str) -> tuple:
+        """
+            parse a stock through sellenium headless service
+            api call: /browse/parse-stock
+            see documentation on sellenium
+        :param symbol:
         :return:
         """
+        pass
 
+    def parse_broker(self, broker_code: str) -> tuple:
+        """
+            
+        :param broker_code:
+        :return:
+        """
+        pass
 
     @staticmethod
-    def download_content(url: str, params: dict) -> str:
+    def login(self) -> bool:
+        """
+            call login
+        :return:
+        """
         try:
-            response = requests.get(url=url, params=params)
-            if response.ok:
-                return response.text
-        except ConnectionRefusedError:
-            return ""
+            url = 'https://sellenium.pinoydesk.com/browse/login'
+            response = requests.post(url=url)
+            json_data: dict = response.json()
+            return json_data['status']
         except ConnectionError:
-            return ""
+            print('cannot login')
+            return False
 
     def save_to_data_service(self, content: str) -> bool:
         try:
