@@ -14,7 +14,7 @@ class Scrapper:
     temp_store_api_save: str = os.environ.get("TEMP_STORE_ADD_DATA")
     temp_store_api_delete: str = os.environ.get("TEMP_STORE_ADD_DELETE")
 
-    def __init__(self, login_url: str, target_url: str, username: str = None, password: str = None):
+    def __init__(self, login_url: str = None, target_url: str = None, username: str = None, password: str = None):
         self.login_url = login_url
         self.username = username or os.environ.get('username')
         self.password = password or os.environ.get('password')
