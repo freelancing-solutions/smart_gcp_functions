@@ -1,9 +1,6 @@
 import base64
-from flask import Flask
-from loader_scrapper import load_scrapper_settings
 from scrapper import Scrapper
 from api import ApiCaller
-
 from parser import Parser
 
 
@@ -16,7 +13,6 @@ def scrapper_requester(event, context):
     """
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
     print(pubsub_message)
-    load_scrapper_settings()
 
     # NOTE login_url and all the other settings could be configure here
     scrapper_api: Scrapper = Scrapper()

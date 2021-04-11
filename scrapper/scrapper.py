@@ -32,25 +32,55 @@ class Scrapper:
         """
         pass
 
-    def parse_stock(self, symbol: str) -> tuple:
+    @staticmethod
+    def parse_stock(symbol: str, from_date: str = "", to_date: str = "") -> tuple:
         """
             parse a stock through sellenium headless service
             api call: /browse/parse-stock
             see documentation on sellenium
-        :param symbol:
-        :return:
-        """
-        pass
 
-    def parse_broker(self, broker_code: str) -> tuple:
+            :param to_date: optional
+            :param from_date: optional
+            :param symbol: required
+
+            :return: stock trades by brokers
+        """
+        try:
+            data = {'symbol': symbol, 'from_date': from_date, 'to_date': to_date}
+            url = 'https://sellenium.pinoydesk.com/browse/parse-stock'
+            response = requests.post(url=url, json=jsonify(data))
+            json_data = response.json()
+            if response.ok:
+                # payload already includes required data
+                return json_data, 200
+            else:
+                # error message already contained in message
+                return json_data, 500
+        except ConnectionError as e:
+            return jsonify({'status': False, 'message': e}), 500
+
+    @staticmethod
+    def parse_broker(broker_code: str, from_date: str = "", to_date: str = "") -> tuple:
         """
             parse a broker through sellenium headless chrome service
             api call: /browse/parse-broker
             see docs
+        :param to_date:
+        :param from_date:
         :param broker_code:
-        :return:
+        :return: broker trades by stock
         """
-        pass
+        try:
+            data = {'broker_code': broker_code, 'from_date': from_date, 'to_date': to_date}
+            url = 'https://sellenium.pinoydesk.com/browse/parse-broker'
+            response = requests.post(url=url,json=jsonify(data))
+            json_data = response.json()
+            if response.ok:
+                return json_data, 200
+            else:
+                return json_data, 500
+        except ConnectionError as e:
+            return jsonify({'status': False, 'message': e}), 500
 
     def build_broker_list_with_parser(self) -> tuple:
         """
@@ -73,8 +103,10 @@ class Scrapper:
         :return:
         """
         try:
+
+            data: dict = {'username': self.username, 'password': self.password}
             url = 'https://sellenium.pinoydesk.com/browse/login'
-            response = requests.post(url=url)
+            response = requests.post(url=url, json=jsonify(data))
             json_data: dict = response.json()
             return json_data['status']
         except ConnectionError:

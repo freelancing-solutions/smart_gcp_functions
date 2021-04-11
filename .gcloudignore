@@ -12,6 +12,7 @@
 # below:
 .git
 .gitignore
+/deploy.md
 
 node_modules
 #!include:.gitignore
