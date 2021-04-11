@@ -5,7 +5,7 @@
 """
 
 
-def load_settings():
+def load_scrapper_settings():
     """
         call the data service endpoint containing the settings files
         return only scrapper settings
