@@ -44,9 +44,25 @@ class Scrapper:
 
     def parse_broker(self, broker_code: str) -> tuple:
         """
-            
+            parse a broker through sellenium headless chrome service
+            api call: /browse/parse-broker
+            see docs
         :param broker_code:
         :return:
+        """
+        pass
+
+    def build_broker_list_with_parser(self) -> tuple:
+        """
+            use the parse and parse for brokers list to build our data services api
+            :return: a list of brokers on each call
+        """
+        pass
+
+    def build_stock_list_with_parser(self) -> tuple:
+        """
+
+            :return: a list of stocks
         """
         pass
 
