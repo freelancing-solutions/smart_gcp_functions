@@ -1,61 +1,114 @@
-import base64
+import base64, json
 from scrapper import Scrapper
 from api import ApiCaller
 from parser import Parser
+from flask import jsonify
 
 
-def scrapper_requester(event, context):
+def return_options() -> tuple:
+    # Allows GET requests from origin https://mydomain.com with
+    # Authorization header
+    headers = {
+        'Access-Control-Allow-Origin': 'https://data-service.pinoydesk.com',
+        'Access-Control-Allow-Methods': 'POST,GET,PUT,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Origin, Accept, Content-Type, X-Requested-With, '
+                                        'X-CSRF-Token',
+        'Access-Control-Max-Age': '3600',
+        'Access-Control-Allow-Credentials': 'true'
+    }
+    return '', 204, headers
+
+
+def scrapper_requester(request):
     """
-        Triggered from a message on a Cloud Pub/Sub topic.
-        Args:
-             event (dict): Event payload.
-             context (google.cloud.functions.Context): Metadata for the event.
+        type: HTTP
+        trigger: task scheduler - the task will run continually triggering functions with different
+        symbols to scrape the data , then continually save scrapped data on temp storage
     """
-    pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
+    # For more information about CORS and CORS preflight requests, see
+    # https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request
+    # for more information.
+    # Set CORS headers for preflight requests
+    if request.method == 'OPTIONS':
+        return return_options()
+    else:
+        pass
 
-    # NOTE login_url and all the other settings could be configure here
+    content_type = request.headers.get('content-type')
+    if content_type == 'application/json':
+        json_data = request.get_json(silent=True)
+    else:
+        return jsonify({"status": False, "payload": {}, "error": "JSON is Invalid"})
+
+    from_date = json_data.get('from_date')
+    to_date = json_data.get('to_date')
+    use_scrapper = json_data.get('use_scrapper')
     scrapper_api: Scrapper = Scrapper()
 
-    return "OK", 200
+    if use_scrapper == "stock":
+        symbol = json_data.get('symbol')
+        return scrapper_api.scrapper_stock(symbol=symbol, from_date=from_date, to_date=to_date)
+    elif use_scrapper == "broker":
+        broker_code = json_data.get('broker_code')
+        return scrapper_api.scrapper_broker(broker_code=broker_code, from_date=from_date, to_date=to_date)
+    else:
+        return jsonify({"status": False, "message": "can only scrapper broker and stock at the moment"}), 500
 
 
-def parse_then_send_to_dataservice(event, context):
+def parse_and_save_data_service(request):
     """
-        Triggered from a message on a Cloud Pub/Sub topic.
+        Triggered by HTTP from tasks on data-service
+        will start triggering as soon as the parser is done
         Args:
              event (dict): Event payload.
              context (google.cloud.functions.Context): Metadata for the event.
+             :param request:
     """
 
-    pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
+    if request.method == 'OPTIONS':
+        return return_options()
+    else:
+        pass
 
-    parser_instance: Parser = Parser()
+    content_type = request.headers.get('content-type')
+    if content_type == 'application/json':
+        json_data = request.get_json(silent=True)
+    else:
+        return jsonify({"status": False, "payload": {}, "error": "JSON is Invalid"})
 
-    return "OK", 200
+    data = json_data.get('data')
+    use_parser = json_data.get('use_parser')
+    parser_instance: Parser = Parser(html=data)
+    if use_parser == "stocks":
+        stocks_data = parser_instance.parse_stocks()
+        return parser_instance.save_stocks(stocks=stocks_data)
+
+    elif use_parser == "brokers":
+        brokers_data = parser_instance.parse_brokers()
+        return parser_instance.save_brokers(brokers=brokers_data)
+    else:
+        return jsonify({"status": False, "message": "can only parse stocks or brokers"}), 500
 
 
-def pse_api_requester(event, context):
+def api_requester(request):
     """
-        Triggered from a message on a Cloud Pub/Sub topic.
-        Args:
-             event (dict): Event payload.
-             context (google.cloud.functions.Context): Metadata for the event.
+        triggered by a task scheduler with symbols
+        to get data on pse or eod api to either compare with scrapped data or by admin
+        to manually enter data
     """
+    if request.method == 'OPTIONS':
+        return return_options()
+    else:
+        pass
 
-    pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
+    content_type = request.headers.get('content-type')
+    if content_type == 'application/json':
+        json_data = request.get_json(silent=True)
+    else:
+        return jsonify({"status": False, "payload": {}, "error": "JSON is Invalid"})
 
-    api_instance: ApiCaller = ApiCaller()
-
-    return "OK", 200
-
-
-def eod_api_requester(event, context):
-    pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
-
-    api_instance: ApiCaller = ApiCaller()
-
-    return "OK", 200
+    use_api = json_data.get("use_api")
+    endpoint = json_data.get('endpoint')
+    api_instance: ApiCaller = ApiCaller(api_name=use_api)
+    # NOTE: the data from here can go directly to the data-service store
+    return api_instance.call_api(endpoint=endpoint)

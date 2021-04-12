@@ -5,35 +5,69 @@ import requests
 
 class Scrapper:
     base_data_service_api_url: str = os.environ.get('DATA_SERVICE_BASE_URI')
-    login_url: str = ""
-    username: str = ""
-    password: str = ""
-    target_url: str = ""
-    input_pubsub_subscription: str = ""
-    output_pubsub_subscription: str = ""
     temp_store_api_save: str = os.environ.get("TEMP_STORE_ADD_DATA")
     temp_store_api_delete: str = os.environ.get("TEMP_STORE_ADD_DELETE")
 
-    def __init__(self, login_url: str = None, target_url: str = None, username: str = None, password: str = None):
-        self.login_url = login_url
+    username: str = ""
+    password: str = ""
+    stocks: list = []
+    brokers: list = []
+
+    scrape_stock_sellenium_uri: str = "https://sellenium.pinoydesk.com/browse/parse-stock"
+    scrape_broker_sellenium_uri: str = "'https://sellenium.pinoydesk.com/browse/parse-broker'"
+
+    def __init__(self, username: str = None, password: str = None):
         self.username = username or os.environ.get('username')
         self.password = password or os.environ.get('password')
-        self.target_url = target_url
 
     def get_all_stocks(self) -> tuple:
         """
             :return: a list of stock details from data-service api
         """
-        pass
+        try:
+            url: str = self.base_data_service_api_url + '/api/v1/all/stocks'
+            response = requests.post(url=url)
+            if response.ok:
+                json_data: dict = response.json()
+                stocks_list: list = json_data.get('payload')
+                if isinstance(stocks_list, list):
+                    self.stocks = stocks_list
+                    return jsonify({"status": True, "payload": stocks_list,
+                                    "message": "successfully fetched stocks list"})
+                else:
+                    return jsonify({"status": False,
+                                    "message": "Unable to download stocks"}), 500
+            else:
+                return jsonify({"status": False,
+                                "message": "Unable to download stocks"}), 500
+
+        except ConnectionError as e:
+            return jsonify({"status": False, "message": e}), 500
 
     def get_all_brokers(self) -> tuple:
         """
             :return: a list of brokers from data service api
         """
-        pass
+        try:
+            url: str = self.base_data_service_api_url + '/api/v1/all/brokers'
+            response = requests.post(url=url)
+            if response.ok:
+                json_data: dict = response.json()
+                brokers_list: list = json_data.get('payload')
+                if isinstance(brokers_list, list):
+                    self.brokers = brokers_list
+                    return jsonify({"status": True, "payload": brokers_list,
+                                    "message": "successfully fetched brokers list"})
+                else:
+                    return jsonify({"status": False,
+                                    "message": "Unable to download brokers"}), 500
+            else:
+                return jsonify({"status": False,
+                                "message": "Unable to download stocks"}), 500
+        except ConnectionError as e:
+            return jsonify({"status": False, "message": e}), 500
 
-    @staticmethod
-    def parse_stock(symbol: str, from_date: str = "", to_date: str = "") -> tuple:
+    def scrapper_stock(self, symbol: str, from_date: str = "", to_date: str = "") -> tuple:
         """
             parse a stock through sellenium headless service
             api call: /browse/parse-stock
@@ -46,11 +80,11 @@ class Scrapper:
             :return: stock trades by brokers
         """
         try:
-            data = {'symbol': symbol, 'from_date': from_date, 'to_date': to_date}
-            url = 'https://sellenium.pinoydesk.com/browse/parse-stock'
+            data: dict = {'symbol': symbol, 'from_date': from_date, 'to_date': to_date}
+            url: str = self.scrape_stock_sellenium_uri
             response = requests.post(url=url, json=jsonify(data))
             json_data = response.json()
-            if response.ok:
+            if response.ok is True:
                 # payload already includes required data
                 return json_data, 200
             else:
@@ -59,8 +93,7 @@ class Scrapper:
         except ConnectionError as e:
             return jsonify({'status': False, 'message': e}), 500
 
-    @staticmethod
-    def parse_broker(broker_code: str, from_date: str = "", to_date: str = "") -> tuple:
+    def scrapper_broker(self, broker_code: str, from_date: str = "", to_date: str = "") -> tuple:
         """
             parse a broker through sellenium headless chrome service
             api call: /browse/parse-broker
@@ -72,8 +105,8 @@ class Scrapper:
         """
         try:
             data = {'broker_code': broker_code, 'from_date': from_date, 'to_date': to_date}
-            url = 'https://sellenium.pinoydesk.com/browse/parse-broker'
-            response = requests.post(url=url,json=jsonify(data))
+            url = self.scrape_broker_sellenium_uri
+            response = requests.post(url=url, json=jsonify(data))
             json_data = response.json()
             if response.ok:
                 return json_data, 200
