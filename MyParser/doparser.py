@@ -1,6 +1,6 @@
 
 
-class Parser:
+class DataParser:
     input_pub_sub_subscription = ""
     output_pub_sub_subscription = ""
     stocks: list = []

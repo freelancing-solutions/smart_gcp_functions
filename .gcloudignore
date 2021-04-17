@@ -13,6 +13,7 @@
 .git
 .gitignore
 /deploy.md
+.idea
 
 node_modules
 #!include:.gitignore

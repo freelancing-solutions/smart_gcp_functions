@@ -1,8 +1,7 @@
-import base64, json
-from scrapper import Scrapper
-from api import ApiCaller
-from parser import Parser
 from flask import jsonify
+from api import ApiCaller
+from MyParser import DataParser
+from scrapper import Scrapper
 
 
 def return_options() -> tuple:
@@ -58,7 +57,7 @@ def scrapper_requester(request):
 def parse_and_save_data_service(request):
     """
         Triggered by HTTP from tasks on data-service
-        will start triggering as soon as the parser is done
+        will start triggering as soon as the MyParser is done
         Args:
              event (dict): Event payload.
              context (google.cloud.functions.Context): Metadata for the event.
@@ -78,7 +77,7 @@ def parse_and_save_data_service(request):
 
     data = json_data.get('data')
     use_parser = json_data.get('use_parser')
-    parser_instance: Parser = Parser(html=data)
+    parser_instance: DataParser = DataParser(html=data)
     if use_parser == "stocks":
         stocks_data = parser_instance.parse_stocks()
         return parser_instance.save_stocks(stocks=stocks_data)
